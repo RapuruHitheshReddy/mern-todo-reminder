@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -28,9 +27,9 @@ const server = http.createServer(app);
 // 📡 Setup Socket.io
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000', // ✅ Frontend URL
+    origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
     methods: ['GET', 'POST'],
-    credentials: true, // ✅ Allows cookies
+    credentials: true,
   },
 });
 global._io = io;
@@ -38,11 +37,13 @@ global._io = io;
 // ⚙️ Middleware
 app.use(express.json());
 
-// 🌍 CORS setup (Frontend must match this in dev or prod)
-app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
-  credentials: true,
-}));
+// 🌍 CORS setup
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
+    credentials: true,
+  })
+);
 
 // 🛒 MongoStore Session Setup
 const store = MongoStore.create({
@@ -50,7 +51,7 @@ const store = MongoStore.create({
   crypto: {
     secret: process.env.SESSION_SECRET || 'fallbackSecret',
   },
-  touchAfter: 24 * 3600, // 1 write per 24h unless modified
+  touchAfter: 24 * 3600,
 });
 
 store.on('error', (err) => {
@@ -66,9 +67,9 @@ const sessionConfig = {
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    secure: process.env.NODE_ENV === 'production', // only secure in production
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // for cross-origin cookies
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   },
 };
 
@@ -79,6 +80,11 @@ app.use(passport.session());
 // 📁 Routes
 app.use('/auth', authRoutes);
 app.use('/todos', todoRoutes);
+
+// ✅ Add a root route for Render health check
+app.get('/', (req, res) => {
+  res.send('✅ Server is up and running.');
+});
 
 // 🔁 Reminder Checker
 setInterval(() => {
