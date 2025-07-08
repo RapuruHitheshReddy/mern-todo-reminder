@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const session = require('express-session');
@@ -53,7 +54,6 @@ const store = MongoStore.create({
   },
   touchAfter: 24 * 3600,
 });
-
 store.on('error', (err) => {
   console.log('❌ MongoStore Error:', err);
 });
@@ -77,14 +77,23 @@ app.use(session(sessionConfig));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// 📁 Routes
+// 📁 API Routes
 app.use('/auth', authRoutes);
 app.use('/todos', todoRoutes);
 
-// ✅ Add a root route for Render health check
-app.get('/', (req, res) => {
+// ✅ Health check
+app.get('/api/health', (req, res) => {
   res.send('✅ Server is up and running.');
 });
+
+// 🟢 Serve frontend in production
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '../client/build');
+  app.use(express.static(clientBuildPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+}
 
 // 🔁 Reminder Checker
 setInterval(() => {
@@ -92,7 +101,7 @@ setInterval(() => {
   checkReminders(io);
 }, 1000);
 
-// 📡 WebSocket setup
+// 📡 WebSocket connection
 io.on('connection', (socket) => {
   console.log('📡 New socket connected:', socket.id);
   socket.on('disconnect', () => {
