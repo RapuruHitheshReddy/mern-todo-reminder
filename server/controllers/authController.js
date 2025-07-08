@@ -24,8 +24,10 @@ exports.register = async (req, res) => {
 
 // ✅ Login after passport.authenticate succeeds
 exports.login = (req, res) => {
-  res.status(200).json({ message: 'Login successful', user: req.user });
+  console.log("✅ Login Success - Session:", req.session);
+  res.status(200).json({ message: "Login successful", user: req.user });
 };
+
 
 // ✅ Logout with cookie clearance
 exports.logout = (req, res) => {

@@ -33,15 +33,8 @@ const server = http.createServer(app);
 
 // 🌍 CORS config
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || origin === CLIENT_ORIGIN) {
-      callback(null, true);
-    } else {
-      console.log("❌ Blocked by CORS:", origin);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
+  origin: CLIENT_ORIGIN,  // ✅ No function
+credentials: true
 };
 app.use(cors(corsOptions));
 
