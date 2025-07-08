@@ -6,16 +6,17 @@ const dotenv = require("dotenv");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const passport = require("passport");
+const cookieParser = require("cookie-parser"); // ✅ Added
 const connectDB = require("./config/db");
 const todoRoutes = require("./routes/todoRoutes");
 const authRoutes = require("./routes/auth");
 const checkReminders = require("./reminderChecker");
 const { Server } = require("socket.io");
 
-// 🌐 Load env vars
+// 🌐 Load environment variables
 dotenv.config();
 
-// 🔗 MongoDB
+// 🔗 Connect to MongoDB
 connectDB();
 
 // 🔐 Passport strategy
@@ -33,6 +34,9 @@ app.use(
     credentials: true,
   })
 );
+
+// 🧁 Parse cookies from requests
+app.use(cookieParser()); // ✅ VERY IMPORTANT for session-based auth
 
 // 🔄 Body parser
 app.use(express.json());
@@ -56,13 +60,13 @@ app.use(
     cookie: {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      secure: true, // ✅ Required on HTTPS
-      sameSite: "none", // ✅ Allow cross-origin cookies from frontend
+      secure: true, // ✅ Required for HTTPS
+      sameSite: "none", // ✅ Needed for cross-origin cookie sharing
     },
   })
 );
 
-// 🔐 Auth
+// 🔐 Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -75,7 +79,7 @@ app.get("/api/health", (req, res) => {
   res.send("✅ Server is up and running.");
 });
 
-// 🟢 Serve frontend (production)
+// 🟢 Serve frontend (production only)
 if (process.env.NODE_ENV === "production") {
   const clientBuildPath = path.join(__dirname, "../client/build");
   app.use(express.static(clientBuildPath));
@@ -101,7 +105,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// ⏰ Start reminder checker
+// ⏰ Reminder checker
 setInterval(() => {
   console.log("⏰ Checking reminders at", new Date().toLocaleTimeString());
   checkReminders(io);
