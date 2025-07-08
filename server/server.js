@@ -12,77 +12,71 @@ const authRoutes = require("./routes/auth");
 const checkReminders = require("./reminderChecker");
 const { Server } = require("socket.io");
 
-// 🌐 Load environment variables
+// 🌐 Load env vars
 dotenv.config();
 
-// 🔗 Connect to MongoDB
+// 🔗 MongoDB
 connectDB();
 
-// 🔐 Passport config
+// 🔐 Passport strategy
 require("./config/passport")(passport);
 
-// 🌍 Dynamic environment setup
-const isProduction = process.env.NODE_ENV === "production";
-const CLIENT_ORIGIN = isProduction
-  ? process.env.PROD_ORIGIN
-  : process.env.CLIENT_ORIGIN;
-
-// 📦 Create app and server
+// 🌍 Define constants
+const CLIENT_ORIGIN = "https://mern-todo-reminder-8knm.onrender.com";
 const app = express();
 const server = http.createServer(app);
 
-// 🌍 CORS config
+// 🌐 CORS
 app.use(
   cors({
-    origin: "https://mern-todo-reminder-8knm.onrender.com", // ✅ Match exactly
+    origin: CLIENT_ORIGIN,
     credentials: true,
   })
 );
 
-app.use(cors(corsOptions));
-
-// 🔄 Body parsing
+// 🔄 Body parser
 app.use(express.json());
 
-// 🧠 Session Setup
+// 🧠 Sessions
 const store = MongoStore.create({
   mongoUrl: process.env.MONGO_URI,
-  crypto: {
-    secret: process.env.SESSION_SECRET || "fallbackSecret",
-  },
+  crypto: { secret: process.env.SESSION_SECRET || "fallbackSecret" },
   touchAfter: 24 * 3600,
 });
+
 store.on("error", (err) => console.error("❌ MongoStore Error:", err));
 
-const sessionConfig = {
-  store,
-  name: "todoSession",
-  secret: process.env.SESSION_SECRET || "fallbackSecret",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    secure: true, // ✅ You are on HTTPS (Render)
-    sameSite: "lax", // ✅ NOT 'none' for same origin
-  },
-};
+app.use(
+  session({
+    store,
+    name: "todoSession",
+    secret: process.env.SESSION_SECRET || "fallbackSecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: true, // ✅ Required on HTTPS
+      sameSite: "none", // ✅ Allow cross-origin cookies from frontend
+    },
+  })
+);
 
-app.use(session(sessionConfig));
+// 🔐 Auth
 app.use(passport.initialize());
 app.use(passport.session());
 
-// 📁 API Routes
+// 📁 Routes
 app.use("/auth", authRoutes);
 app.use("/todos", todoRoutes);
 
-// ✅ Health check
+// ✅ Health route
 app.get("/api/health", (req, res) => {
   res.send("✅ Server is up and running.");
 });
 
-// 🟢 Serve frontend in production
-if (isProduction) {
+// 🟢 Serve frontend (production)
+if (process.env.NODE_ENV === "production") {
   const clientBuildPath = path.join(__dirname, "../client/build");
   app.use(express.static(clientBuildPath));
   app.get(/(.*)/, (req, res) => {
@@ -90,23 +84,24 @@ if (isProduction) {
   });
 }
 
-// 📡 WebSocket setup
+// 📡 WebSocket
 const io = new Server(server, {
   cors: {
     origin: CLIENT_ORIGIN,
     credentials: true,
   },
 });
+
 global._io = io;
 
 io.on("connection", (socket) => {
-  console.log("📡 New socket connected:", socket.id);
+  console.log("📡 Socket connected:", socket.id);
   socket.on("disconnect", () => {
     console.log("❌ Socket disconnected:", socket.id);
   });
 });
 
-// 🔁 Reminder checker
+// ⏰ Start reminder checker
 setInterval(() => {
   console.log("⏰ Checking reminders at", new Date().toLocaleTimeString());
   checkReminders(io);
