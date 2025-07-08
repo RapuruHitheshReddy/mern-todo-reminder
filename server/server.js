@@ -61,7 +61,7 @@ app.use(
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       secure: true, // ✅ Required for HTTPS
-      sameSite: "none", // ✅ Needed for cross-origin cookie sharing
+      sameSite: "lax", // ✅ Needed for cross-origin cookie sharing
     },
   })
 );
