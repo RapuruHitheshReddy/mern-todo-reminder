@@ -119,7 +119,7 @@ function App() {
 
   useEffect(() => {
     if (isLoggedIn) {
-      const socket = io("http://localhost:5000", {
+      const socket = io(process.env.REACT_APP_API_BASE, {
         withCredentials: true,
       });
 

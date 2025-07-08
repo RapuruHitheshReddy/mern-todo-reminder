@@ -1,32 +1,32 @@
+// src/pages/Login.js
 import React, { useState } from "react";
 import API from "../services/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 
-const Login = ({ onLogin }) => { // ✅ Accept onLogin from App.js
+const Login = ({ onLogin }) => {
   const [form, setForm] = useState({ email: "", password: "" });
   const navigate = useNavigate();
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    await API.post("/auth/login", form, { withCredentials: true });
-    toast.success("Logged in successfully");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await API.post("/auth/login", form, { withCredentials: true });
+      toast.success("Logged in successfully");
 
-    if (typeof onLogin === "function") {
-      await onLogin(); // ✅ update app state
+      if (typeof onLogin === "function") {
+        await onLogin(); // Ensure session is established
+      }
+
+      navigate("/"); // Only after session is confirmed
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Login failed");
     }
-
-    navigate("/"); // ✅ redirect to homepage
-  } catch (err) {
-    toast.error(err.response?.data?.message || "Login failed");
-  }
-};
-
+  };
 
   return (
     <motion.div
@@ -78,9 +78,9 @@ const handleSubmit = async (e) => {
         <div className="text-center mt-3">
           <small>
             Don’t have an account?{" "}
-            <a href="/register" className="text-decoration-underline">
+            <Link to="/register" className="text-decoration-underline">
               Register
-            </a>
+            </Link>
           </small>
         </div>
       </div>

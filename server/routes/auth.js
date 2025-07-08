@@ -19,4 +19,13 @@ router.post('/logout', authController.logout);
 // Check login status
 router.get('/me', authController.getCurrentUser);
 
+router.get('/debug-session', (req, res) => {
+  res.json({
+    session: req.session,
+    user: req.user,
+    authenticated: req.isAuthenticated(),
+  });
+});
+
+
 module.exports = router;

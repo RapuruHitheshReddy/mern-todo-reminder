@@ -1,49 +1,50 @@
-import React, { useState } from 'react';
-import API from '../services/api';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { motion } from 'framer-motion';
+// src/pages/Register.js
+import React, { useState } from "react";
+import API from "../services/api";
+import { useNavigate, Link } from "react-router-dom";
+import { toast } from "react-toastify";
+import { motion } from "framer-motion";
 
-const Register = ({ onLogin }) => { // ✅ Accept onLogin from App.js
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+const Register = ({ onLogin }) => {
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const navigate = useNavigate();
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    await API.post("/auth/register", form, { withCredentials: true });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await API.post("/auth/register", form, { withCredentials: true });
 
-    await API.post(
-      "/auth/login",
-      { email: form.email, password: form.password },
-      { withCredentials: true }
-    );
+      // Login after register
+      await API.post(
+        "/auth/login",
+        { email: form.email, password: form.password },
+        { withCredentials: true }
+      );
 
-    toast.success("Registered & logged in successfully");
+      toast.success("Registered & logged in");
 
-    if (typeof onLogin === "function") {
-      await onLogin(); // ✅ update app state
+      if (typeof onLogin === "function") {
+        await onLogin();
+      }
+
+      navigate("/");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Registration failed");
     }
-
-    navigate("/"); // ✅ redirect to homepage
-  } catch (err) {
-    toast.error(err.response?.data?.message || "Registration failed");
-  }
-};
-
+  };
 
   return (
     <motion.div
       className="container d-flex justify-content-center align-items-center"
-      style={{ minHeight: '90vh' }}
+      style={{ minHeight: "90vh" }}
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <div className="card p-5 w-100" style={{ maxWidth: '400px' }}>
+      <div className="card p-5 w-100" style={{ maxWidth: "400px" }}>
         <h3 className="text-center mb-4">
           <i className="bi bi-person-plus-fill me-2 text-primary" />
           Register
@@ -61,6 +62,7 @@ const handleSubmit = async (e) => {
               required
             />
           </div>
+
           <div className="mb-3">
             <label className="form-label">Email</label>
             <input
@@ -73,6 +75,7 @@ const handleSubmit = async (e) => {
               required
             />
           </div>
+
           <div className="mb-4">
             <label className="form-label">Password</label>
             <input
@@ -85,6 +88,7 @@ const handleSubmit = async (e) => {
               required
             />
           </div>
+
           <button type="submit" className="btn btn-primary w-100 rounded-3">
             <i className="bi bi-check-circle me-2" />
             Register
@@ -94,7 +98,9 @@ const handleSubmit = async (e) => {
         <div className="text-center mt-3">
           <small>
             Already have an account?{" "}
-            <a href="/login" className="text-decoration-underline">Login</a>
+            <Link to="/login" className="text-decoration-underline">
+              Login
+            </Link>
           </small>
         </div>
       </div>

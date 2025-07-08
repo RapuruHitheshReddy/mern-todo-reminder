@@ -21,32 +21,34 @@ connectDB();
 // 🔐 Passport config
 require('./config/passport')(passport);
 
+// 🌍 Dynamic environment setup
+const isProduction = process.env.NODE_ENV === 'production';
+const CLIENT_ORIGIN = isProduction
+  ? process.env.PROD_ORIGIN
+  : process.env.CLIENT_ORIGIN;
+
 // 📦 Create app and server
 const app = express();
 const server = http.createServer(app);
 
-// 📡 Setup Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-    credentials: true,
+// 🌍 CORS config
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || origin === CLIENT_ORIGIN) {
+      callback(null, true);
+    } else {
+      console.log('❌ Blocked by CORS:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
   },
-});
-global._io = io;
+  credentials: true,
+};
+app.use(cors(corsOptions));
 
-// ⚙️ Middleware
+// 🔄 Body parsing
 app.use(express.json());
 
-// 🌍 CORS setup
-app.use(
-  cors({
-    origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
-    credentials: true,
-  })
-);
-
-// 🛒 MongoStore Session Setup
+// 🧠 Session Setup
 const store = MongoStore.create({
   mongoUrl: process.env.MONGO_URI,
   crypto: {
@@ -54,11 +56,8 @@ const store = MongoStore.create({
   },
   touchAfter: 24 * 3600,
 });
-store.on('error', (err) => {
-  console.log('❌ MongoStore Error:', err);
-});
+store.on('error', (err) => console.error('❌ MongoStore Error:', err));
 
-// 🧠 Session Config
 const sessionConfig = {
   store,
   name: 'todoSession',
@@ -67,9 +66,9 @@ const sessionConfig = {
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
   },
 };
 
@@ -87,30 +86,35 @@ app.get('/api/health', (req, res) => {
 });
 
 // 🟢 Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
-  const path = require('path');
+if (isProduction) {
   const clientBuildPath = path.join(__dirname, '../client/build');
   app.use(express.static(clientBuildPath));
-
-  app.get(/.*/, (req, res) => {
+  app.get('*', (req, res) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 }
 
+// 📡 WebSocket setup
+const io = new Server(server, {
+  cors: {
+    origin: CLIENT_ORIGIN,
+    credentials: true,
+  },
+});
+global._io = io;
 
-// 🔁 Reminder Checker
-setInterval(() => {
-  console.log('⏰ Checking reminders at', new Date().toLocaleTimeString());
-  checkReminders(io);
-}, 1000);
-
-// 📡 WebSocket connection
 io.on('connection', (socket) => {
   console.log('📡 New socket connected:', socket.id);
   socket.on('disconnect', () => {
     console.log('❌ Socket disconnected:', socket.id);
   });
 });
+
+// 🔁 Reminder checker
+setInterval(() => {
+  console.log('⏰ Checking reminders at', new Date().toLocaleTimeString());
+  checkReminders(io);
+}, 1000);
 
 // 🚀 Start server
 const PORT = process.env.PORT || 5000;
