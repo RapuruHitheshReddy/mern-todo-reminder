@@ -1,4 +1,3 @@
-// src/pages/Login.js
 import React, { useState } from "react";
 import API from "../services/api";
 import { useNavigate, Link } from "react-router-dom";
@@ -15,15 +14,20 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await API.post("/auth/login", form, { withCredentials: true });
-      toast.success("Logged in successfully");
+      const res = await API.post("/auth/login", form, {
+        withCredentials: true, // ✅ Ensures cookie is sent and received
+      });
 
+      toast.success("✅ Logged in successfully");
+
+      // ✅ Confirm session is stored
       if (typeof onLogin === "function") {
-        await onLogin(); // Ensure session is established
+        await onLogin(); // This should trigger GET /auth/me
       }
 
-      navigate("/"); // Only after session is confirmed
+      navigate("/"); // ✅ Navigate only after session confirmed
     } catch (err) {
+      console.error("❌ Login Error:", err.response || err.message);
       toast.error(err.response?.data?.message || "Login failed");
     }
   };

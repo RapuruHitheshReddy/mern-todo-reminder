@@ -2,8 +2,9 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE || "http://localhost:5000",
-  withCredentials: true, // ✅ Include cookies in requests
+  baseURL: 'https://mern-todo-reminder-8knm.onrender.com',
+  withCredentials: true,  // ✅ Include cookie in requests
 });
+
 
 export default api;

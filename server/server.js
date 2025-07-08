@@ -32,10 +32,13 @@ const app = express();
 const server = http.createServer(app);
 
 // 🌍 CORS config
-const corsOptions = {
-  origin: CLIENT_ORIGIN,  // ✅ No function
-credentials: true
-};
+app.use(
+  cors({
+    origin: "https://mern-todo-reminder-8knm.onrender.com", // ✅ Match exactly
+    credentials: true,
+  })
+);
+
 app.use(cors(corsOptions));
 
 // 🔄 Body parsing
@@ -59,9 +62,9 @@ const sessionConfig = {
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: true, // ✅ You are on HTTPS (Render)
+    sameSite: "lax", // ✅ NOT 'none' for same origin
   },
 };
 
